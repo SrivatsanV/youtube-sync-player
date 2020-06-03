@@ -32,6 +32,9 @@ io.on('connection', (socket) => {
   socket.on('accept call', (incoming) => {
     io.to(incoming.callerID).emit('callee signal', incoming.signal);
   });
+  socket.on('closing', (id) => {
+    console.log(id);
+  });
 });
 
 server.listen(process.env.PORT || 8000, () =>
