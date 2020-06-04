@@ -4,26 +4,50 @@ import Peer from 'simple-peer';
 
 const Room = (props) => {
   const socketRef = useRef();
-  const peerRef = useRef();
+  const peerRef = useRef([]);
   const youtubePlayer = useRef();
   const [videoID, setVideoID] = useState('');
+  const [initiator, setInitiator] = useState(false);
 
   useEffect(() => {
     socketRef.current = io.connect('http://localhost:8000');
     socketRef.current.emit('join room', props.match.params.roomID);
+    socketRef.current.on('initiator check', (user) => {
+      setInitiator(true);
+    });
 
     socketRef.current.on('create connection', (partnerID) => {
       if (partnerID) {
-        peerRef.current = createConnection(partnerID, socketRef.current.id);
+        console.log('partner' + partnerID);
+        let peer = createConnection(partnerID, socketRef.current.id);
+        peerRef.current.push({
+          peerID: partnerID,
+          peer: peer,
+        });
+        console.log(peerRef.current);
       }
     });
 
     socketRef.current.on('caller signal', (incoming) => {
-      peerRef.current = addPeer(incoming.signal, incoming.callerID);
+      let peer = addPeer(
+        incoming.signal,
+        incoming.callerID,
+        incoming.partnerID
+      );
+      peerRef.current.push({
+        peerID: incoming.callerID,
+        peer: peer,
+      });
+      console.log(peerRef.current);
     });
 
-    socketRef.current.on('callee signal', (signal) => {
-      peerRef.current.signal(signal);
+    socketRef.current.on('callee signal', (incoming) => {
+      console.log(incoming.callingID);
+      let peer = peerRef.current.find(
+        (item) => item.peerID === incoming.callingID
+      );
+      console.log(peer);
+      peer.peer.signal(incoming.signal);
     });
 
     socketRef.current.on('room full', () => {
@@ -63,16 +87,28 @@ const Room = (props) => {
   function onPlayerStateChange(event) {
     console.log(event);
     console.log(youtubePlayer.current.getCurrentTime());
-    if (event.data === -1) playVideo();
-    if (event.data === 1) playVideo();
-    else if (event.data === 2) stopVideo();
-    else if (
+    if (event.data === -1) youtubePlayer.current.playVideo();
+    if (event.data === 1) {
+      playVideo();
+    } else if (event.data === 2) {
+      stopVideo();
+    } else if (
       event.data === 3 &&
       youtubePlayer.current.getVideoLoadedFraction() !== 0 &&
       youtubePlayer.current.getCurrentTime() !== 0
     ) {
       console.log('hi1');
       seekToVideo(event);
+      //stopVideo();
+      youtubePlayer.current.playVideo();
+    } else if (
+      event.data === 3 &&
+      youtubePlayer.current.getCurrentTime() === 0
+    ) {
+      //seekToVideo(event);
+      console.log('3 and 0 s');
+      youtubePlayer.current.playVideo();
+      playVideo();
     }
     // } else if (
     //   event.data === 3 &&
@@ -84,26 +120,34 @@ const Room = (props) => {
     // }
   }
   function stopVideo() {
-    peerRef.current.send(JSON.stringify({ type: 'pause' }));
+    peerRef.current.map((item) =>
+      item.peer.send(JSON.stringify({ type: 'pause' }))
+    );
     youtubePlayer.current.pauseVideo();
   }
 
   function playVideo() {
-    peerRef.current.send(JSON.stringify({ type: 'play' }));
-    youtubePlayer.current.playVideo();
-  }
-  function seekToVideo(event) {
-    peerRef.current.send(
-      JSON.stringify({
-        type: 'seek',
-        time: event.target.playerInfo.currentTime,
-      })
+    peerRef.current.map((item) =>
+      item.peer.send(JSON.stringify({ type: 'play' }))
     );
     youtubePlayer.current.playVideo();
   }
+  function seekToVideo(event) {
+    peerRef.current.map((item) =>
+      item.peer.send(
+        JSON.stringify({
+          type: 'seek',
+          time: event.target.playerInfo.currentTime,
+        })
+      )
+    );
+    //youtubePlayer.current.playVideo();
+  }
 
   function loadVideo() {
-    peerRef.current.send(JSON.stringify({ type: 'newVideo', data: videoID }));
+    peerRef.current.map((item) =>
+      item.peer.send(JSON.stringify({ type: 'newVideo', data: videoID }))
+    );
     youtubePlayer.current.loadVideoById(videoID.split('=')[1]);
   }
 
@@ -133,12 +177,13 @@ const Room = (props) => {
     return peer;
   }
 
-  function addPeer(incomingSignal, callerID) {
+  function addPeer(incomingSignal, callerID, callingID) {
     const peer = new Peer({ initiator: false, trickle: false });
 
     peer.on('signal', (signal) => {
       const payload = {
         callerID,
+        callingID,
         signal,
       };
       socketRef.current.emit('accept call', payload);
@@ -163,7 +208,7 @@ const Room = (props) => {
       youtubePlayer.current.playVideo();
     } else if (parsed.type === 'seek') {
       youtubePlayer.current.seekTo(parsed.time, true);
-      youtubePlayer.current.playVideo();
+      //youtubePlayer.current.playVideo();
     }
   }
 
