@@ -7,14 +7,10 @@ const Room = (props) => {
   const peerRef = useRef([]);
   const youtubePlayer = useRef();
   const [videoID, setVideoID] = useState('');
-  const [initiator, setInitiator] = useState(false);
 
   useEffect(() => {
     socketRef.current = io.connect('http://localhost:8000');
     socketRef.current.emit('join room', props.match.params.roomID);
-    socketRef.current.on('initiator check', (user) => {
-      setInitiator(true);
-    });
 
     socketRef.current.on('create connection', (partnerID) => {
       if (partnerID) {
@@ -78,77 +74,47 @@ const Room = (props) => {
       height: '390',
       width: '640',
       events: {
+        onReady: onPlayerReady,
         onStateChange: onPlayerStateChange,
       },
     });
 
     youtubePlayer.current = player;
   }
+  function onPlayerReady(event) {
+    console.log('HI');
+    //youtubePlayer.current.playVideo();
+  }
+  var seek = false;
+  const VID_CUE = 6; //video cue
   function onPlayerStateChange(event) {
     console.log(event);
-    console.log(youtubePlayer.current.getCurrentTime());
-    if (event.data === -1) youtubePlayer.current.playVideo();
-    if (event.data === 1) {
-      playVideo();
-    } else if (event.data === 2) {
-      stopVideo();
-    } else if (
-      event.data === 3 &&
-      youtubePlayer.current.getVideoLoadedFraction() !== 0 &&
-      youtubePlayer.current.getCurrentTime() !== 0
-    ) {
-      console.log('hi1');
-      seekToVideo(event);
-      //stopVideo();
-      youtubePlayer.current.playVideo();
-    } else if (
-      event.data === 3 &&
-      youtubePlayer.current.getCurrentTime() === 0
-    ) {
-      //seekToVideo(event);
-      console.log('3 and 0 s');
-      youtubePlayer.current.playVideo();
-      playVideo();
+    var msg = {
+      username: socketRef.current.id,
+      data: event.data,
+      currentTime: youtubePlayer.current.getCurrentTime(),
+    };
+    switch (event.data) {
+      case window.YT.PlayerState.PLAYING:
+        peerRef.current.map((item) => item.peer.send(JSON.stringify(msg)));
+        break;
+      case window.YT.PlayerState.PAUSED:
+        peerRef.current.map((item) => item.peer.send(JSON.stringify(msg)));
+        break;
+      case window.YT.PlayerState.BUFFERING:
+        if (seek) seek = false;
+        else peerRef.current.map((item) => item.peer.send(JSON.stringify(msg)));
+        break;
+      case -1:
+        youtubePlayer.current.playVideo();
     }
-    // } else if (
-    //   event.data === 3 &&
-    //   youtubePlayer.current.getCurrentTime() !== 0 &&
-    //   youtubePlayer.current.getVideoLoadedFraction() === 0
-    // ) {
-    //   console.log('hi2' + youtubePlayer.current.currentTime);
-    //   bufferedPause();
-    // }
-  }
-  function stopVideo() {
-    peerRef.current.map((item) =>
-      item.peer.send(JSON.stringify({ type: 'pause' }))
-    );
-    youtubePlayer.current.pauseVideo();
-  }
-
-  function playVideo() {
-    peerRef.current.map((item) =>
-      item.peer.send(JSON.stringify({ type: 'play' }))
-    );
-    youtubePlayer.current.playVideo();
-  }
-  function seekToVideo(event) {
-    peerRef.current.map((item) =>
-      item.peer.send(
-        JSON.stringify({
-          type: 'seek',
-          time: event.target.playerInfo.currentTime,
-        })
-      )
-    );
-    //youtubePlayer.current.playVideo();
   }
 
   function loadVideo() {
-    peerRef.current.map((item) =>
-      item.peer.send(JSON.stringify({ type: 'newVideo', data: videoID }))
-    );
-    youtubePlayer.current.loadVideoById(videoID.split('=')[1]);
+    var v_id = videoID.split('=')[1];
+    var msg = { username: socketRef.current.id, data: VID_CUE, video: v_id };
+    peerRef.current.map((item) => item.peer.send(JSON.stringify(msg)));
+    youtubePlayer.current.loadVideoById(v_id);
   }
 
   function createConnection(partnerID, callerID) {
@@ -156,7 +122,7 @@ const Room = (props) => {
       initiator: true,
       trickle: false,
     });
-
+    console.log(peer);
     peer.on('signal', (signal) => {
       const payload = {
         partnerID,
@@ -171,7 +137,10 @@ const Room = (props) => {
       console.log(err);
     });
     peer.on('close', () => {
-      console.log('Connection closed');
+      peerRef.current = peerRef.current.filter(
+        (item) => item.peer.channelName !== peer.channelName
+      );
+      console.log(peerRef.current);
     });
 
     return peer;
@@ -190,8 +159,15 @@ const Room = (props) => {
     });
 
     peer.on('data', handleData);
+    peer.on('error', (err) => {
+      console.log(err);
+    });
     peer.on('close', () => {
       console.log('Connection closed');
+      peerRef.current = peerRef.current.filter(
+        (item) => item.peer.channelName !== peer.channelName
+      );
+      console.log(peerRef.current);
     });
 
     peer.signal(incomingSignal);
@@ -199,16 +175,25 @@ const Room = (props) => {
   }
 
   function handleData(data) {
-    const parsed = JSON.parse(data);
-    if (parsed.type === 'newVideo') {
-      youtubePlayer.current.loadVideoById(parsed.data.split('=')[1]);
-    } else if (parsed.type === 'pause') {
-      youtubePlayer.current.pauseVideo();
-    } else if (parsed.type === 'play') {
-      youtubePlayer.current.playVideo();
-    } else if (parsed.type === 'seek') {
-      youtubePlayer.current.seekTo(parsed.time, true);
-      //youtubePlayer.current.playVideo();
+    const msg = JSON.parse(data);
+    if (msg.username === socketRef.current.id) return; // Ignore what I sent.
+    console.log(msg.username + '  ' + socketRef.current.id);
+    switch (msg.data) {
+      case window.YT.PlayerState.PLAYING:
+        console.log('playing');
+        youtubePlayer.current.playVideo();
+        break;
+      case window.YT.PlayerState.PAUSED:
+        youtubePlayer.current.pauseVideo();
+        break;
+      case window.YT.PlayerState.BUFFERING:
+        seek = true;
+        youtubePlayer.current.seekTo(msg.currentTime, true);
+        break;
+      case VID_CUE:
+        //youtubePlayer.current.cueVideoById(msg.video, 0, 'large');
+        youtubePlayer.current.loadVideoById(msg.video);
+        break;
     }
   }
 
