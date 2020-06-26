@@ -8,10 +8,23 @@ const io = socket(server);
 const rooms = {};
 
 io.on('connection', (socket) => {
-  socket.on('join room', (roomID) => {
+  //check for uniqueness in username
+  socket.on('check user', (roomData) => {
+    const { roomID, name } = roomData;
+    let present = false;
+    if (rooms[roomID]) {
+      if (rooms[roomID].some((item) => item.username === name)) {
+        present = true;
+      }
+    }
+    io.to(socket.id).emit('check user result', present);
+  });
+
+  socket.on('join room', (roomData) => {
+    const { roomID, name } = roomData;
     if (rooms[roomID]) {
       if (!rooms[roomID].includes(socket.id)) {
-        rooms[roomID].push({ id: socket.id, type: 'partner' });
+        rooms[roomID].push({ id: socket.id, type: 'partner', username: name });
       }
       //find the initiator and emit to that socket id
       const initiator = rooms[roomID].find((item) => item.type === 'initiator');
@@ -25,7 +38,7 @@ io.on('connection', (socket) => {
         });
       }
     } else {
-      rooms[roomID] = [{ id: socket.id, type: 'initiator' }];
+      rooms[roomID] = [{ id: socket.id, type: 'initiator', username: name }];
       io.to(socket.id).emit('initiator check', socket.id);
     }
   });
