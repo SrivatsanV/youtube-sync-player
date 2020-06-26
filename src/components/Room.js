@@ -7,67 +7,77 @@ const Room = (props) => {
   const peerRef = useRef([]);
   const youtubePlayer = useRef();
   const [videoID, setVideoID] = useState('');
+  const [showForm, setShowForm] = useState(true);
+  const [username, setUsername] = useState({ socRef: '', user: '' });
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     socketRef.current = io.connect('http://localhost:8000');
-    socketRef.current.emit('join room', props.match.params.roomID);
+    if (!showForm) {
+      socketRef.current.emit('join room', {
+        roomID: props.match.params.roomID,
+        name: username.user,
+      });
+      setUsername({ ...username, socRef: socketRef.current.id });
+      socketRef.current.on('create connection', (partnerID) => {
+        if (partnerID) {
+          console.log('partner' + partnerID);
+          let peer = createConnection(partnerID, socketRef.current.id);
+          peerRef.current.push({
+            peerID: partnerID,
+            peer: peer,
+          });
+          console.log(peerRef.current);
+        }
+      });
 
-    socketRef.current.on('create connection', (partnerID) => {
-      if (partnerID) {
-        console.log('partner' + partnerID);
-        let peer = createConnection(partnerID, socketRef.current.id);
+      socketRef.current.on('caller signal', (incoming) => {
+        let peer = addPeer(
+          incoming.signal,
+          incoming.callerID,
+          incoming.partnerID
+        );
         peerRef.current.push({
-          peerID: partnerID,
+          peerID: incoming.callerID,
           peer: peer,
         });
         console.log(peerRef.current);
-      }
-    });
-
-    socketRef.current.on('caller signal', (incoming) => {
-      let peer = addPeer(
-        incoming.signal,
-        incoming.callerID,
-        incoming.partnerID
-      );
-      peerRef.current.push({
-        peerID: incoming.callerID,
-        peer: peer,
       });
-      console.log(peerRef.current);
-    });
 
-    socketRef.current.on('callee signal', (incoming) => {
-      console.log(incoming.callingID);
-      let peer = peerRef.current.find(
-        (item) => item.peerID === incoming.callingID
-      );
-      console.log(peer);
-      peer.peer.signal(incoming.signal);
-    });
+      socketRef.current.on('callee signal', (incoming) => {
+        console.log(incoming.callingID);
+        let peer = peerRef.current.find(
+          (item) => item.peerID === incoming.callingID
+        );
+        console.log(peer);
+        peer.peer.signal(incoming.signal);
+      });
 
-    socketRef.current.on('room full', () => {
-      alert('room is full');
-    });
-
+      socketRef.current.on('room full', () => {
+        alert('room is full');
+      });
+    }
     //handling closing events
-    window.addEventListener('beforeunload', (ev) => {
-      ev.preventDefault();
-      return (ev.returnValue = socketRef.current.id);
-    });
-    window.addEventListener('unload', () => {
-      peerRef.current.destroy();
-      socketRef.current.emit('closing', socketRef.current.id);
-    });
-  }, []);
+    // window.addEventListener('beforeunload', (ev) => {
+    //   ev.preventDefault();
+    //   return (ev.returnValue = socketRef.current.id);
+    // });
+    // window.addEventListener('unload', () => {
+    //   peerRef.current.destroy();
+    //   socketRef.current.emit('closing', socketRef.current.id);
+    // });
+  }, [showForm]);
 
   useEffect(() => {
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    window.onYouTubeIframeAPIReady = loadVideoPlayer;
-  }, []);
+    if (!showForm) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      window.onYouTubeIframeAPIReady = loadVideoPlayer;
+      console.log('Loaded');
+    }
+  }, [showForm]);
 
   function loadVideoPlayer() {
     const player = new window.YT.Player('player', {
@@ -196,19 +206,55 @@ const Room = (props) => {
         break;
     }
   }
-
-  return (
-    <>
-      <div id="player" />
-      <input
-        type="text"
-        placeholder="video link"
-        value={videoID}
-        onChange={(e) => setVideoID(e.target.value)}
-      />
-      <button onClick={loadVideo}>Load video</button>
-    </>
-  );
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    //check for uniqueness in username
+    socketRef.current.emit('check user', {
+      roomID: props.match.params.roomID,
+      name: username.user,
+    });
+    socketRef.current.on('check user result', (present) => {
+      if (!present) {
+        setShowForm(false);
+      } else {
+        setError(true);
+      }
+    });
+  };
+  if (showForm) {
+    return (
+      <div>
+        <form onSubmit={handleSubmit}>
+          <label>
+            Name:
+            <input
+              type="text"
+              value={username.user}
+              onChange={(e) =>
+                setUsername({ ...username, user: e.target.value })
+              }
+            />
+          </label>
+          <input type="submit" value="Submit" />
+          {error ? <p>Re-enter name</p> : <></>}
+        </form>
+      </div>
+    );
+  } else {
+    return (
+      <>
+        <h2>{username.user}</h2>
+        <div id="player" />
+        <input
+          type="text"
+          placeholder="video link"
+          value={videoID}
+          onChange={(e) => setVideoID(e.target.value)}
+        />
+        <button onClick={loadVideo}>Load video</button>
+      </>
+    );
+  }
 };
 
 export default Room;
