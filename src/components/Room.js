@@ -1,6 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
+import {
+  Container,
+  Grid,
+  IconButton,
+  Input,
+  InputBase,
+  Paper,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+} from '@material-ui/core';
+import SendIcon from '@material-ui/icons/Send';
+import { borders } from '@material-ui/system';
 
 const Room = (props) => {
   const socketRef = useRef();
@@ -8,9 +22,16 @@ const Room = (props) => {
   const youtubePlayer = useRef();
   const [videoID, setVideoID] = useState('');
   const [showForm, setShowForm] = useState(true);
-  const [username, setUsername] = useState({ socRef: '', user: '' });
+  const [username, setUsername] = useState({ socRef: '', user: 'Test' });
   const [error, setError] = useState(false);
-
+  const [message, setMessage] = useState({
+    data: 7,
+    username: '',
+    msg: '',
+  });
+  const [messages, setMessages] = useState([]);
+  const msgsRef = useRef([]);
+  const messagesEndRef = useRef(null);
   useEffect(() => {
     socketRef.current = io.connect('http://localhost:8000');
     if (!showForm) {
@@ -75,7 +96,6 @@ const Room = (props) => {
       var firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
       window.onYouTubeIframeAPIReady = loadVideoPlayer;
-      console.log('Loaded');
     }
   }, [showForm]);
 
@@ -187,10 +207,9 @@ const Room = (props) => {
   function handleData(data) {
     const msg = JSON.parse(data);
     if (msg.username === socketRef.current.id) return; // Ignore what I sent.
-    console.log(msg.username + '  ' + socketRef.current.id);
+    msgsRef.current.push(msg);
     switch (msg.data) {
       case window.YT.PlayerState.PLAYING:
-        console.log('playing');
         youtubePlayer.current.playVideo();
         break;
       case window.YT.PlayerState.PAUSED:
@@ -204,10 +223,15 @@ const Room = (props) => {
         //youtubePlayer.current.cueVideoById(msg.video, 0, 'large');
         youtubePlayer.current.loadVideoById(msg.video);
         break;
+      case 7:
+        const msgs = msgsRef.current;
+        setMessages([...msgs]);
+        break;
     }
   }
   const handleSubmit = (e) => {
     e.preventDefault();
+    e.target.reset();
     //check for uniqueness in username
     socketRef.current.emit('check user', {
       roomID: props.match.params.roomID,
@@ -221,6 +245,22 @@ const Room = (props) => {
       }
     });
   };
+  const scrollToBottom = () => {
+    messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  };
+  const sendMsg = (e) => {
+    e.preventDefault();
+    console.log('sendmsg');
+    console.log(messages);
+    setMessages([...messages, message]);
+    msgsRef.current.push(message);
+    //peerRef.current.map((item) => item.peer.send(JSON.stringify(message)));
+  };
+
+  useEffect(() => {
+    if (!showForm) scrollToBottom();
+  }, [messages]);
+  //if (showForm) {
   if (showForm) {
     return (
       <div>
@@ -242,17 +282,113 @@ const Room = (props) => {
     );
   } else {
     return (
-      <>
-        <h2>{username.user}</h2>
-        <div id="player" />
-        <input
-          type="text"
-          placeholder="video link"
-          value={videoID}
-          onChange={(e) => setVideoID(e.target.value)}
-        />
-        <button onClick={loadVideo}>Load video</button>
-      </>
+      <Container>
+        <h1>Youtube sync</h1>
+        <Grid item xs={12} container justify="center">
+          <div item style={{ margin: '20px' }}>
+            <div id="player" style={{ height: '390px', width: '640px' }}>
+              {' '}
+            </div>
+            <div>
+              <input
+                type="text"
+                placeholder="video link"
+                value={videoID}
+                onChange={(e) => setVideoID(e.target.value)}
+              />
+              <button onClick={loadVideo}>Load video</button>
+            </div>
+          </div>
+          <div
+            item
+            style={{
+              margin: '20px',
+              borderRadius: '20px',
+              //perspective: '1px',
+              overflow: 'hidden',
+            }}
+          >
+            <div>
+              <Container
+                maxWidth="sm"
+                style={{
+                  backgroundColor: '#ececec',
+                  height: '400px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignContent: 'flex-start',
+                }}
+                id="chatbox"
+              >
+                <div
+                  style={{
+                    maxWidth: '200px',
+                  }}
+                >
+                  {messages.map((item) => (
+                    <div
+                      style={{
+                        maxWidth: '200px',
+                        display: 'table',
+                        wordBreak: 'break-all',
+                        background: '#30475e',
+                        textAlign: 'left',
+                        margin: '10px 0 10px 0',
+                        padding: '10px',
+                        borderRadius: '10px 10px 10px 0',
+                      }}
+                    >
+                      <p style={{ margin: '2px 0 2px 0', color: '#f2a365' }}>
+                        <b>{item.username}</b>
+                      </p>
+
+                      <p style={{ margin: '2px 0 2px 0' }}>{item.msg}</p>
+                    </div>
+                  ))}
+                </div>
+                <div ref={messagesEndRef} />
+              </Container>
+              <form
+                style={{
+                  borderRadius: '0',
+                  padding: '5px',
+                  backgroundColor: '#30475e',
+                }}
+                onSubmit={sendMsg}
+              >
+                <input
+                  placeholder="Send Message"
+                  inputProps={{ 'aria-label': 'send message' }}
+                  onChange={(e) =>
+                    setMessage({
+                      data: 7,
+                      msg: e.target.value,
+                      username: username.user,
+                    })
+                  }
+                  style={{
+                    width: '300px',
+                    padding: '10px',
+                  }}
+                />
+
+                <IconButton
+                  color="primary"
+                  aria-label="upload picture"
+                  component="span"
+                  type="submit"
+                  value="Submit"
+                  style={{ padding: '5px', color: '#f2a365' }}
+                  onClick={sendMsg}
+                >
+                  <SendIcon />
+                </IconButton>
+              </form>
+            </div>
+          </div>
+        </Grid>
+      </Container>
     );
   }
 };

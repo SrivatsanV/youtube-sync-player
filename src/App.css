@@ -1,3 +1,40 @@
+html,
+body {
+  background-color: #222831;
+}
 .App {
+  margin: 0;
   text-align: center;
+  color: #ececec;
+}
+
+/* width */
+#chatbox::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+#chatbox::-webkit-scrollbar-track {
+  background: #ececec;
+}
+
+/* Handle */
+#chatbox::-webkit-scrollbar-thumb {
+  border-radius: 20px 20px 0 0;
+  background: #888;
+}
+
+/* Handle on hover */
+#chatbox::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+input {
+  background: #30475e;
+  border: 1px solid #30475e;
+  border-radius: 20px;
+  outline: none;
+  -webkit-transition: 0.5s;
+  transition: 0.5s;
+  color: #ececec;
+  font-size: 1rem;
 }
