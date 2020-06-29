@@ -1,20 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
-import Peer from 'simple-peer';
-import {
-  Container,
-  Grid,
-  IconButton,
-  Input,
-  InputBase,
-  Paper,
-  Card,
-  CardContent,
-  Typography,
-  Box,
-} from '@material-ui/core';
-import SendIcon from '@material-ui/icons/Send';
-import { borders } from '@material-ui/system';
+import { Container, Grid, Box, TextField } from '@material-ui/core';
+import Messages from '../Messages/Messages';
+import MessageForm from '../MessageForm/MessageForm';
+
+import { createConnection, addPeer } from '../utils/webRTC';
+
+import './style.css';
 
 const Room = (props) => {
   const socketRef = useRef();
@@ -22,7 +14,7 @@ const Room = (props) => {
   const youtubePlayer = useRef();
   const [videoID, setVideoID] = useState('');
   const [showForm, setShowForm] = useState(true);
-  const [username, setUsername] = useState({ socRef: '', user: 'Test' });
+  const [username, setUsername] = useState({ socRef: '', user: '' });
   const [error, setError] = useState(false);
   const [message, setMessage] = useState({
     data: 7,
@@ -31,7 +23,7 @@ const Room = (props) => {
   });
   const [messages, setMessages] = useState([]);
   const msgsRef = useRef([]);
-  const messagesEndRef = useRef(null);
+
   useEffect(() => {
     socketRef.current = io.connect('http://localhost:8000');
     if (!showForm) {
@@ -43,7 +35,13 @@ const Room = (props) => {
       socketRef.current.on('create connection', (partnerID) => {
         if (partnerID) {
           console.log('partner' + partnerID);
-          let peer = createConnection(partnerID, socketRef.current.id);
+          let peer = createConnection(
+            partnerID,
+            socketRef.current.id,
+            handleData,
+            socketRef,
+            peerRef
+          );
           peerRef.current.push({
             peerID: partnerID,
             peer: peer,
@@ -56,7 +54,10 @@ const Room = (props) => {
         let peer = addPeer(
           incoming.signal,
           incoming.callerID,
-          incoming.partnerID
+          incoming.partnerID,
+          handleData,
+          socketRef,
+          peerRef
         );
         peerRef.current.push({
           peerID: incoming.callerID,
@@ -147,63 +148,6 @@ const Room = (props) => {
     youtubePlayer.current.loadVideoById(v_id);
   }
 
-  function createConnection(partnerID, callerID) {
-    const peer = new Peer({
-      initiator: true,
-      trickle: false,
-    });
-    console.log(peer);
-    peer.on('signal', (signal) => {
-      const payload = {
-        partnerID,
-        callerID,
-        signal,
-      };
-      socketRef.current.emit('call partner', payload);
-    });
-
-    peer.on('data', handleData);
-    peer.on('error', (err) => {
-      console.log(err);
-    });
-    peer.on('close', () => {
-      peerRef.current = peerRef.current.filter(
-        (item) => item.peer.channelName !== peer.channelName
-      );
-      console.log(peerRef.current);
-    });
-
-    return peer;
-  }
-
-  function addPeer(incomingSignal, callerID, callingID) {
-    const peer = new Peer({ initiator: false, trickle: false });
-
-    peer.on('signal', (signal) => {
-      const payload = {
-        callerID,
-        callingID,
-        signal,
-      };
-      socketRef.current.emit('accept call', payload);
-    });
-
-    peer.on('data', handleData);
-    peer.on('error', (err) => {
-      console.log(err);
-    });
-    peer.on('close', () => {
-      console.log('Connection closed');
-      peerRef.current = peerRef.current.filter(
-        (item) => item.peer.channelName !== peer.channelName
-      );
-      console.log(peerRef.current);
-    });
-
-    peer.signal(incomingSignal);
-    return peer;
-  }
-
   function handleData(data) {
     const msg = JSON.parse(data);
     if (msg.username === socketRef.current.id) return; // Ignore what I sent.
@@ -216,7 +160,7 @@ const Room = (props) => {
         youtubePlayer.current.pauseVideo();
         break;
       case window.YT.PlayerState.BUFFERING:
-        seek = true;
+        //seek = true;
         youtubePlayer.current.seekTo(msg.currentTime, true);
         break;
       case VID_CUE:
@@ -233,52 +177,70 @@ const Room = (props) => {
     e.preventDefault();
     e.target.reset();
     //check for uniqueness in username
-    socketRef.current.emit('check user', {
-      roomID: props.match.params.roomID,
-      name: username.user,
-    });
-    socketRef.current.on('check user result', (present) => {
-      if (!present) {
-        setShowForm(false);
-      } else {
-        setError(true);
-      }
-    });
+    if (username.user.match('^[A-Za-z0-9]+$')) {
+      socketRef.current.emit('check user', {
+        roomID: props.match.params.roomID,
+        name: username.user,
+      });
+      socketRef.current.on('check user result', (present) => {
+        if (!present) {
+          setShowForm(false);
+        } else {
+          setError(true);
+        }
+      });
+    } else {
+      setError(true);
+    }
   };
-  const scrollToBottom = () => {
-    messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  };
+
   const sendMsg = (e) => {
     e.preventDefault();
     console.log('sendmsg');
     console.log(messages);
     setMessages([...messages, message]);
     msgsRef.current.push(message);
-    //peerRef.current.map((item) => item.peer.send(JSON.stringify(message)));
+    peerRef.current.map((item) => item.peer.send(JSON.stringify(message)));
+  };
+  const changeMsg = (e) => {
+    setMessage({
+      data: 7,
+      msg: e.target.value,
+      username: username.user,
+    });
   };
 
-  useEffect(() => {
-    if (!showForm) scrollToBottom();
-  }, [messages]);
-  //if (showForm) {
   if (showForm) {
     return (
-      <div>
-        <form onSubmit={handleSubmit}>
-          <label>
-            Name:
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        style={{
+          height: '100vh',
+        }}
+      >
+        <div>
+          <h1 style={{ marginTop: '-100px' }}>
+            Welcome to Youtube sync player
+          </h1>
+          <form onSubmit={handleSubmit} style={{}}>
+            <label id="label-name">Name:</label>
             <input
               type="text"
+              placeholder="Enter username"
               value={username.user}
               onChange={(e) =>
                 setUsername({ ...username, user: e.target.value })
               }
+              id="input-username"
             />
-          </label>
-          <input type="submit" value="Submit" />
-          {error ? <p>Re-enter name</p> : <></>}
-        </form>
-      </div>
+
+            <input id="submit-button" type="submit" value="Submit" />
+            {error ? <p style={{ color: '#ffbd69' }}>Re-enter name</p> : <></>}
+          </form>
+        </div>
+      </Box>
     );
   } else {
     return (
@@ -309,82 +271,9 @@ const Room = (props) => {
             }}
           >
             <div>
-              <Container
-                maxWidth="sm"
-                style={{
-                  backgroundColor: '#ececec',
-                  height: '400px',
-                  overflowY: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignContent: 'flex-start',
-                }}
-                id="chatbox"
-              >
-                <div
-                  style={{
-                    maxWidth: '200px',
-                  }}
-                >
-                  {messages.map((item) => (
-                    <div
-                      style={{
-                        maxWidth: '200px',
-                        display: 'table',
-                        wordBreak: 'break-all',
-                        background: '#30475e',
-                        textAlign: 'left',
-                        margin: '10px 0 10px 0',
-                        padding: '10px',
-                        borderRadius: '10px 10px 10px 0',
-                      }}
-                    >
-                      <p style={{ margin: '2px 0 2px 0', color: '#f2a365' }}>
-                        <b>{item.username}</b>
-                      </p>
+              <Messages messages={messages} />
 
-                      <p style={{ margin: '2px 0 2px 0' }}>{item.msg}</p>
-                    </div>
-                  ))}
-                </div>
-                <div ref={messagesEndRef} />
-              </Container>
-              <form
-                style={{
-                  borderRadius: '0',
-                  padding: '5px',
-                  backgroundColor: '#30475e',
-                }}
-                onSubmit={sendMsg}
-              >
-                <input
-                  placeholder="Send Message"
-                  inputProps={{ 'aria-label': 'send message' }}
-                  onChange={(e) =>
-                    setMessage({
-                      data: 7,
-                      msg: e.target.value,
-                      username: username.user,
-                    })
-                  }
-                  style={{
-                    width: '300px',
-                    padding: '10px',
-                  }}
-                />
-
-                <IconButton
-                  color="primary"
-                  aria-label="upload picture"
-                  component="span"
-                  type="submit"
-                  value="Submit"
-                  style={{ padding: '5px', color: '#f2a365' }}
-                  onClick={sendMsg}
-                >
-                  <SendIcon />
-                </IconButton>
-              </form>
+              <MessageForm sendMsg={sendMsg} changeMsg={changeMsg} />
             </div>
           </div>
         </Grid>

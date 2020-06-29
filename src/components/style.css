@@ -1,0 +1,57 @@
+/* width */
+#chatbox::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+#chatbox::-webkit-scrollbar-track {
+  background: #ececec;
+}
+
+/* Handle */
+#chatbox::-webkit-scrollbar-thumb {
+  border-radius: 20px 20px 0 0;
+  background: #888;
+}
+
+/* Handle on hover */
+#chatbox::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+#input-username {
+  /* width: 300px; */
+  background: #30475e;
+  border: 2px solid #30475e;
+  padding: 10px;
+  border-radius: 5px;
+  outline: none;
+  -webkit-transition: 0.5s;
+  transition: 0.5s;
+  color: #ececec;
+  font-size: 1rem;
+  margin-top: 20px;
+}
+
+#input-username:focus {
+  border-color: #ffbd69;
+}
+
+#label-name {
+  margin: 20px 10px 0 0;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+#submit-button {
+  text-decoration: none;
+  margin: 20px 0 0 10px;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 2px solid #ffbd69;
+  background-color: #ffbd69;
+  color: #30475e;
+  display: inline-block;
+  font-weight: bold;
+}
