@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
-import { Container, Grid, Box, TextField } from '@material-ui/core';
+import { Container, Grid, Box } from '@material-ui/core';
 import Messages from '../Messages/Messages';
 import MessageForm from '../MessageForm/MessageForm';
 
@@ -237,7 +237,11 @@ const Room = (props) => {
             />
 
             <input id="submit-button" type="submit" value="Submit" />
-            {error ? <p style={{ color: '#ffbd69' }}>Re-enter name</p> : <></>}
+            {error ? (
+              <p style={{ color: '#ffbd69' }}>Re-enter name</p>
+            ) : (
+              <p style={{ color: '#222831' }}>Nothing</p>
+            )}
           </form>
         </div>
       </Box>

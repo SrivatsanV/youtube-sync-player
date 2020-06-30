@@ -43,7 +43,8 @@
   font-weight: bold;
 }
 
-#submit-button {
+#submit-button,
+#create-button {
   text-decoration: none;
   margin: 20px 0 0 10px;
   padding: 10px;
@@ -54,4 +55,14 @@
   color: #30475e;
   display: inline-block;
   font-weight: bold;
+  transition: 0.5s;
+  outline: none;
+}
+
+#create-button:hover,
+#submit-button:hover {
+  cursor: pointer;
+  background-color: #30475e;
+  border: 2px solid #30475e;
+  color: #ffbd69;
 }
