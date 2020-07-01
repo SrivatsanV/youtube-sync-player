@@ -51,8 +51,11 @@ io.on('connection', (socket) => {
   socket.on('accept call', (incoming) => {
     io.to(incoming.callerID).emit('callee signal', incoming);
   });
-  socket.on('closing', (id) => {
-    console.log(id);
+  socket.on('closing', (data) => {
+    const { id, roomID } = data;
+    if (rooms[roomID]) {
+      rooms[roomID] = rooms[roomID].filter((item) => item.id !== id);
+    }
   });
 });
 

@@ -1,0 +1,18 @@
+.message-form {
+  border-radius: 0;
+  padding: 5px;
+  background-color: #30475e;
+}
+
+#message-form-input {
+  width: 300px;
+  padding: 10px;
+  background: #30475e;
+  border: 1px solid #30475e;
+  border-radius: 20px;
+  outline: none;
+  -webkit-transition: 0.5s;
+  transition: 0.5s;
+  color: #ececec;
+  font-size: 1rem;
+}
