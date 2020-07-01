@@ -80,14 +80,17 @@ const Room = (props) => {
       });
     }
     //handling closing events
-    // window.addEventListener('beforeunload', (ev) => {
-    //   ev.preventDefault();
-    //   return (ev.returnValue = socketRef.current.id);
-    // });
-    // window.addEventListener('unload', () => {
-    //   peerRef.current.destroy();
-    //   socketRef.current.emit('closing', socketRef.current.id);
-    // });
+    window.addEventListener('beforeunload', (ev) => {
+      ev.preventDefault();
+      return (ev.returnValue = socketRef.current.id);
+    });
+    window.addEventListener('unload', () => {
+      socketRef.current.emit('closing', {
+        id: socketRef.current.id,
+        roomID: props.match.params.roomID,
+      });
+      peerRef.current.destroy();
+    });
   }, [showForm]);
 
   useEffect(() => {
