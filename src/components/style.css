@@ -1,3 +1,25 @@
+.player-preloader {
+  z-index: 1;
+  position: relative;
+  /* top: calc(50% - 1em); */
+  left: calc(50% - 1.5em);
+  width: 1.5em;
+  height: 1.5em;
+  border: 0.5em solid rgba(0, 0, 0, 0.9);
+  border-left: 0.5em solid #ffbd69;
+  border-radius: 50%;
+  animation: playerLoad 1.1s infinite linear;
+}
+
+@keyframes playerLoad {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* width */
 #chatbox::-webkit-scrollbar {
   width: 10px;
@@ -19,7 +41,8 @@
   background: #555;
 }
 
-#input-username {
+#input-username,
+#input-video-link {
   /* width: 300px; */
   background: #30475e;
   border: 2px solid #30475e;
@@ -60,9 +83,21 @@
 }
 
 #create-button:hover,
-#submit-button:hover {
+#submit-button:hover,
+#button-video:hover {
   cursor: pointer;
   background-color: #30475e;
   border: 2px solid #30475e;
   color: #ffbd69;
+}
+
+#button-video {
+  text-decoration: none;
+  margin: 0 0 0 10px;
+  border-radius: 5px;
+  border: 2px solid #ffbd69;
+  background-color: #ffbd69;
+  color: #30475e;
+  font-weight: bold;
+  transition: 0.5s;
 }

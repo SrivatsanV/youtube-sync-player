@@ -22,13 +22,14 @@ io.on('connection', (socket) => {
 
   socket.on('join room', (roomData) => {
     const { roomID, name } = roomData;
-    if (rooms[roomID]) {
+    if (rooms[roomID] && rooms[roomID] !== undefined) {
       if (!rooms[roomID].includes(socket.id)) {
         rooms[roomID].push({ id: socket.id, type: 'partner', username: name });
       }
       //find the initiator and emit to that socket id
       const initiator = rooms[roomID].find((item) => item.type === 'initiator');
-      io.to(initiator.id).emit('create connection', socket.id);
+      if (initiator !== undefined)
+        io.to(initiator.id).emit('create connection', socket.id);
 
       if (rooms[roomID].length > 2) {
         rooms[roomID].map((user) => {
