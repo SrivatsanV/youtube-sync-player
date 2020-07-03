@@ -22,7 +22,7 @@ export default function Messages({ messages }) {
       maxWidth="sm"
       style={{
         backgroundColor: '#ececec',
-        height: '400px',
+        height: '500px',
         overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',

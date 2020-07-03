@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
-import { Container, Grid, Box } from '@material-ui/core';
+import { Container, Grid, Box, Button } from '@material-ui/core';
+import PublishIcon from '@material-ui/icons/Publish';
 import Messages from '../Messages/Messages';
 import MessageForm from '../MessageForm/MessageForm';
 
@@ -14,6 +15,7 @@ const Room = (props) => {
   const youtubePlayer = useRef();
   const [videoID, setVideoID] = useState('');
   const [showForm, setShowForm] = useState(true);
+  const [showPlayer, setShowPlayer] = useState(false);
   const [username, setUsername] = useState({ socRef: '', user: '' });
   const [error, setError] = useState(false);
   const [message, setMessage] = useState({
@@ -80,17 +82,18 @@ const Room = (props) => {
       });
     }
     //handling closing events
-    window.addEventListener('beforeunload', (ev) => {
-      ev.preventDefault();
-      return (ev.returnValue = socketRef.current.id);
-    });
-    window.addEventListener('unload', () => {
+    const closinghandler = () => {
       socketRef.current.emit('closing', {
         id: socketRef.current.id,
         roomID: props.match.params.roomID,
       });
       peerRef.current.destroy();
+    };
+    window.addEventListener('beforeunload', (ev) => {
+      ev.preventDefault();
+      ev.returnValue = 'Want to leave?';
     });
+    window.onunload = closinghandler;
   }, [showForm]);
 
   useEffect(() => {
@@ -117,7 +120,7 @@ const Room = (props) => {
   }
   function onPlayerReady(event) {
     console.log('HI');
-    //youtubePlayer.current.playVideo();
+    setShowPlayer(true);
   }
   var seek = false;
   const VID_CUE = 6; //video cue
@@ -146,6 +149,7 @@ const Room = (props) => {
 
   function loadVideo() {
     var v_id = videoID.split('=')[1];
+    setVideoID('');
     var msg = { username: socketRef.current.id, data: VID_CUE, video: v_id };
     peerRef.current.map((item) => item.peer.send(JSON.stringify(msg)));
     youtubePlayer.current.loadVideoById(v_id);
@@ -199,11 +203,10 @@ const Room = (props) => {
 
   const sendMsg = (e) => {
     e.preventDefault();
-    console.log('sendmsg');
-    console.log(messages);
     setMessages([...messages, message]);
     msgsRef.current.push(message);
     peerRef.current.map((item) => item.peer.send(JSON.stringify(message)));
+    e.target.reset();
   };
   const changeMsg = (e) => {
     setMessage({
@@ -254,30 +257,46 @@ const Room = (props) => {
       <Container>
         <h1>Youtube sync</h1>
         <Grid item xs={12} container justify="center">
-          <div item style={{ margin: '20px' }}>
-            <div id="player" style={{ height: '390px', width: '640px' }}>
-              {' '}
+          <div style={{ margin: '20px', overflow: 'hidden' }}>
+            <div
+              id="player"
+              style={{ height: '390px', width: '640px', display: 'block' }}
+            >
+              {showPlayer ? (
+                <></>
+              ) : (
+                <div style={{ paddingTop: '185px', textAlign: 'center' }}>
+                  <div className="player-preloader"></div>
+                </div>
+              )}
             </div>
-            <div>
+            <div style={{ marginTop: '30px' }}>
               <input
+                id="input-video-link"
                 type="text"
                 placeholder="video link"
                 value={videoID}
                 onChange={(e) => setVideoID(e.target.value)}
               />
-              <button onClick={loadVideo}>Load video</button>
+              <Button
+                variant="contained"
+                id="button-video"
+                startIcon={<PublishIcon />}
+                onClick={loadVideo}
+              >
+                Load
+              </Button>
             </div>
           </div>
           <div
-            item
             style={{
               margin: '20px',
               borderRadius: '20px',
-              //perspective: '1px',
+              // perspective: '1px',
               overflow: 'hidden',
             }}
           >
-            <div>
+            <div style={{ borderRadius: '20px' }}>
               <Messages messages={messages} />
 
               <MessageForm sendMsg={sendMsg} changeMsg={changeMsg} />
