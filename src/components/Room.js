@@ -82,17 +82,18 @@ const Room = (props) => {
       });
     }
     //handling closing events
-    window.addEventListener('beforeunload', (ev) => {
-      ev.preventDefault();
-      return (ev.returnValue = socketRef.current.id);
-    });
-    window.addEventListener('unload', () => {
+    const closinghandler = () => {
       socketRef.current.emit('closing', {
         id: socketRef.current.id,
         roomID: props.match.params.roomID,
       });
       peerRef.current.destroy();
+    };
+    window.addEventListener('beforeunload', (ev) => {
+      ev.preventDefault();
+      ev.returnValue = 'Want to leave?';
     });
+    window.onunload = closinghandler;
   }, [showForm]);
 
   useEffect(() => {
@@ -202,8 +203,6 @@ const Room = (props) => {
 
   const sendMsg = (e) => {
     e.preventDefault();
-    console.log('sendmsg');
-    console.log(messages);
     setMessages([...messages, message]);
     msgsRef.current.push(message);
     peerRef.current.map((item) => item.peer.send(JSON.stringify(message)));

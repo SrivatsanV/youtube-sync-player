@@ -20,7 +20,7 @@ export default function MessageForm({ sendMsg, changeMsg }) {
         type="submit"
         value="Submit"
         style={{ padding: '5px', color: '#f2a365' }}
-        onClick={sendMsg}
+        onClick={(e) => sendMsg(e)}
       >
         <SendIcon />
       </IconButton>
