@@ -255,7 +255,7 @@ const Room = (props) => {
   } else {
     return (
       <Container>
-        <h1>Youtube sync</h1>
+        <h1>Welcome, {username.user}</h1>
         <Grid item xs={12} container justify="center">
           <div style={{ margin: '20px', overflow: 'hidden' }}>
             <div
