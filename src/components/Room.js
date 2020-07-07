@@ -108,8 +108,8 @@ const Room = (props) => {
 
   function loadVideoPlayer() {
     const player = new window.YT.Player('player', {
-      height: '390',
-      width: '640',
+      height: '100%',
+      width: '100%',
       events: {
         onReady: onPlayerReady,
         onStateChange: onPlayerStateChange,
@@ -119,7 +119,6 @@ const Room = (props) => {
     youtubePlayer.current = player;
   }
   function onPlayerReady(event) {
-    console.log('HI');
     setShowPlayer(true);
   }
   var seek = false;
@@ -257,18 +256,17 @@ const Room = (props) => {
       <Container>
         <h1>Welcome, {username.user}</h1>
         <Grid item xs={12} container justify="center">
-          <div style={{ margin: '20px', overflow: 'hidden' }}>
-            <div
-              id="player"
-              style={{ height: '390px', width: '640px', display: 'block' }}
-            >
-              {showPlayer ? (
-                <></>
-              ) : (
-                <div style={{ paddingTop: '185px', textAlign: 'center' }}>
-                  <div className="player-preloader"></div>
-                </div>
-              )}
+          <div className="video-wrapper">
+            <div className="video-container">
+              <div id="player">
+                {showPlayer ? (
+                  <></>
+                ) : (
+                  <div style={{ paddingTop: '28.25%', textAlign: 'center' }}>
+                    <div className="player-preloader"></div>
+                  </div>
+                )}
+              </div>
             </div>
             <div style={{ marginTop: '30px' }}>
               <input
@@ -288,14 +286,7 @@ const Room = (props) => {
               </Button>
             </div>
           </div>
-          <div
-            style={{
-              margin: '20px',
-              borderRadius: '20px',
-              // perspective: '1px',
-              overflow: 'hidden',
-            }}
-          >
+          <div className="messages-wrapper">
             <div style={{ borderRadius: '20px' }}>
               <Messages messages={messages} />
 

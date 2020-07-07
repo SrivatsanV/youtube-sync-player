@@ -18,21 +18,10 @@ export default function Messages({ messages }) {
     //messagesEndRef.current.scrollIntoViewIfNeeded();
   };
   return (
-    <Container
-      maxWidth="sm"
-      style={{
-        backgroundColor: '#ececec',
-        height: '500px',
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        alignContent: 'flex-start',
-      }}
-      id="chatbox"
-    >
+    <Container maxWidth="sm" id="chatbox">
       <div className="message-container">
-        {messages.map((item) => (
-          <div className="message">
+        {messages.map((item, i) => (
+          <div className="message" key={i}>
             <p className="username">
               <b>{item.username}</b>
             </p>

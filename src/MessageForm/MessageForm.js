@@ -9,7 +9,6 @@ export default function MessageForm({ sendMsg, changeMsg }) {
       <input
         id="message-form-input"
         placeholder="Send Message"
-        inputProps={{ 'aria-label': 'send message' }}
         onChange={(e) => changeMsg(e)}
       />
 
