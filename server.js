@@ -1,10 +1,14 @@
-const express = require('express');
-const http = require('http');
-const app = express();
-const server = http.createServer(app);
-const socket = require('socket.io');
-const io = socket(server);
-
+// const express = require('express');
+// const http = require('http');
+// const app = express();
+// const server = http.createServer(app);
+// const socket = require('socket.io');
+// const io = socket(server);
+var app = require('express')();
+var http = require('http').createServer(app);
+var io = require('socket.io')(http, {
+  path: '/socket',
+});
 const rooms = {};
 
 io.on('connection', (socket) => {
@@ -80,6 +84,6 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(process.env.PORT || 8000, () =>
+http.listen(process.env.PORT || 8000, () =>
   console.log('server is running on port 8000')
 );

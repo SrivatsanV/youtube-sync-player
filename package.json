@@ -1,49 +1,35 @@
 {
-  "name": "sync-master",
-  "version": "0.1.0",
-  "private": true,
+  "name": "youtube-sync-player",
+  "version": "1.0.0",
+  "description": "A web application to synchronize youtube videos on different browsers using WebRTC (simple-peer library is used to simply peer related WebRTC operations).  \r To run the application : \r * Clone the repo\r * `npm start` in the cloned directory\r * `cd server` and node server to rune the server",
+  "main": "server.js",
   "dependencies": {
-    "@material-ui/core": "^4.10.2",
-    "@material-ui/icons": "^4.9.1",
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.5.0",
-    "@testing-library/user-event": "^7.2.1",
+    "concurrently": "^5.2.0",
     "express": "^4.17.1",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "react-router": "^5.2.0",
-    "react-router-dom": "^5.2.0",
-    "react-scripts": "3.4.1",
-    "simple-peer": "^9.7.2",
-    "socket.io": "^2.3.0",
-    "socket.io-client": "^2.3.0",
-    "uuid": "^8.1.0"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.3",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5"
-  }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "client-install": "npm install --prefix client\\node_modules",
+    "server": "node server.js",
+    "client": "npm start --prefix client",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SrivatsanV/youtube-sync-player.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SrivatsanV/youtube-sync-player/issues"
+  },
+  "homepage": "https://github.com/SrivatsanV/youtube-sync-player#readme"
 }

@@ -27,7 +27,11 @@ const Room = (props) => {
   const msgsRef = useRef([]);
 
   useEffect(() => {
-    socketRef.current = io.connect('http://localhost:8000');
+    //socketRef.current = io.connect('/');
+    socketRef.current = io('/', {
+      transports: ['websocket'],
+      path: '/socket', // added this line of code
+    });
     if (!showForm) {
       socketRef.current.emit('join room', {
         roomID: props.match.params.roomID,
@@ -157,7 +161,7 @@ const Room = (props) => {
   function handleData(data) {
     const msg = JSON.parse(data);
     if (msg.username === socketRef.current.id) return; // Ignore what I sent.
-    msgsRef.current.push(msg);
+    //
     switch (msg.data) {
       case window.YT.PlayerState.PLAYING:
         youtubePlayer.current.playVideo();
@@ -174,8 +178,11 @@ const Room = (props) => {
         youtubePlayer.current.loadVideoById(msg.video);
         break;
       case 7:
+        msgsRef.current.push(msg);
         const msgs = msgsRef.current;
         setMessages([...msgs]);
+        break;
+      default:
         break;
     }
   }
