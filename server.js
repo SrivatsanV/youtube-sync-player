@@ -86,7 +86,5 @@ io.on('connection', (socket) => {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname + '/client/build/index.html'));
 });
-
-http.listen(process.env.PORT || 8000, () =>
-  console.log('server is running on port 8000')
-);
+const port = process.env.PORT || 8000;
+http.listen(port, () => console.log(`server is running on port ${port}`));

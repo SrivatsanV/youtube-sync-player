@@ -1,7 +1,8 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
+let port = process.env.PORT || 8000;
 
 const socketProxy = createProxyMiddleware('/socket', {
-  target: 'http://localhost:8000/',
+  target: `http://localhost:${port}/`,
   changeOrigin: true,
   ws: true,
   logLevel: 'debug',

@@ -27,8 +27,8 @@ const Room = (props) => {
   const msgsRef = useRef([]);
 
   useEffect(() => {
-    //socketRef.current = io.connect('/');
-    socketRef.current = io('/', {
+    //socketRef.current = io();
+    socketRef.current = io({
       transports: ['websocket'],
       path: '/socket', // added this line of code
     });
